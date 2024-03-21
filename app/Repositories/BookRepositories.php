@@ -29,6 +29,28 @@ class BookRepositories extends GeneralRepositories implements BookRepositoryInte
 
     public function top()
     {
-        return DB::table(`book_user`)->select(DB::raw("'book_id',books.name as book_name,SUM(end_page - start_page) AS num_of_read_pages FROM book_user JOIN books ON books.id=book_user.book_id GROUP BY book_id ORDER BY num_of_read_pages DESC"))->get();
+        return DB::select("with recursive  t as(
+  select book_id,start_page,max(end_page)end_page
+    ,row_number()over(partition by book_id order by start_page) rn
+  from book_user
+  group by book_id,start_page
+)
+,r as(
+  select 0 lvl,bu.book_id,bu.start_page,bu.end_page,bu.rn
+  from t bu
+  where not exists(select 1 from t bu2
+         where bu2.book_id=bu.book_id and bu2.rn<bu.rn
+           and bu.start_page between bu2.start_page and bu2.end_page)
+  union all
+  select lvl+1,r.book_id,r.start_page,t.end_page,t.rn
+  from r inner join t on t.book_id=r.book_id and t.rn>r.rn
+       and r.end_page between t.start_page and r.end_page
+)
+select books.name book_name,book_id,sum(end_page-start_page+1) total_pages
+from (select book_id,start_page,max(end_page) end_page
+      from r
+      group by book_id,start_page
+  ) gr JOIN books ON gr.book_id = books.id
+group by book_id");
     }
 }
