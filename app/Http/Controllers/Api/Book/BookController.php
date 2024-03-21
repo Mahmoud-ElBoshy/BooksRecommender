@@ -28,8 +28,7 @@ class BookController extends BaseApiController
 
     public function top()
     {
-
+        $top = $this->bookService->top();
+        return response()->json($top);
     }
-
-
 }

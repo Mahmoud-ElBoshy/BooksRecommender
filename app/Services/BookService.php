@@ -31,4 +31,9 @@ class BookService
         return 'Your pages interval has been submitted successfully';
 
     }
+
+    public function top()
+    {
+        return $this->bookRepository->top();
+    }
 }
